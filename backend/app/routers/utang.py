@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
@@ -13,13 +13,39 @@ class UtangSchema(BaseModel):
     jumlah: float
     keterangan: Optional[str] = None
 
+class UtangResponse(BaseModel):
+    id: int
+    nama_pelanggan: str
+    jumlah: float
+    keterangan: Optional[str]
+    tanggal: Optional[datetime]
+    lunas: bool
+    tanggal_lunas: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
 @router.get("/")
-def get_utang(db: Session = Depends(get_db)):
-    return db.query(Utang).filter(Utang.lunas == False).all()
+def get_utang(status: str = Query("semua", pattern="^(semua|belum|lunas)$"), db: Session = Depends(get_db)):
+    query = db.query(Utang)
+    if status == "belum":
+        query = query.filter(Utang.lunas == False)
+    elif status == "lunas":
+        query = query.filter(Utang.lunas == True)
+    return query.order_by(Utang.tanggal.desc()).all()
+
+@router.get("/ringkasan")
+def get_ringkasan_utang(db: Session = Depends(get_db)):
+    belum_lunas = db.query(Utang).filter(Utang.lunas == False).all()
+    total = sum(u.jumlah for u in belum_lunas)
+    return {
+        "total_utang": total,
+        "jumlah_pelanggan": len(belum_lunas),
+    }
 
 @router.post("/")
 def tambah_utang(utang: UtangSchema, db: Session = Depends(get_db)):
-    db_utang = Utang(**utang.dict())
+    db_utang = Utang(**utang.model_dump())
     db.add(db_utang)
     db.commit()
     db.refresh(db_utang)
@@ -33,4 +59,5 @@ def tandai_lunas(id: int, db: Session = Depends(get_db)):
     db_utang.lunas = True
     db_utang.tanggal_lunas = datetime.now()
     db.commit()
-    return {"message": "Utang telah ditandai lunas"}
+    db.refresh(db_utang)
+    return db_utang

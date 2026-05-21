@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import date
@@ -28,7 +28,7 @@ def catat_transaksi(data: TransaksiSchema, db: Session = Depends(get_db)):
         if not produk:
             raise HTTPException(status_code=404, detail=f"Produk id {item.produk_id} tidak ditemukan")
         if produk.stok < item.jumlah:
-            raise HTTPException(status_code=400, detail=f"Stok {produk.nama} tidak cukup")
+            raise HTTPException(status_code=400, detail=f"Stok {produk.nama} tidak cukup (sisa {produk.stok})")
 
         subtotal = produk.harga_jual * item.jumlah
         total += subtotal
@@ -67,4 +67,28 @@ def catat_transaksi(data: TransaksiSchema, db: Session = Depends(get_db)):
 
 @router.get("/")
 def get_transaksi(db: Session = Depends(get_db)):
-    return db.query(Transaksi).order_by(Transaksi.tanggal.desc()).limit(50).all()
+    results = db.query(Transaksi).options(
+        joinedload(Transaksi.items)
+    ).order_by(Transaksi.tanggal.desc()).limit(50).all()
+
+    output = []
+    for t in results:
+        output.append({
+            "id": t.id,
+            "tanggal": t.tanggal,
+            "total": t.total,
+            "bayar": t.bayar,
+            "kembalian": t.kembalian,
+            "catatan": t.catatan,
+            "items": [
+                {
+                    "id": item.id,
+                    "produk_id": item.produk_id,
+                    "jumlah": item.jumlah,
+                    "harga_satuan": item.harga_satuan,
+                    "subtotal": item.subtotal,
+                }
+                for item in t.items
+            ],
+        })
+    return output

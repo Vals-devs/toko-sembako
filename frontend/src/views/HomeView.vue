@@ -15,7 +15,7 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
         </div>
         <p class="summary-label">Penjualan Hari Ini</p>
-        <p class="summary-value">Rp 0</p>
+        <p class="summary-value">{{ formatRupiah(laporanStore.harian?.total_pendapatan || 0) }}</p>
       </div>
       <div class="summary-card summary-card--blue">
         <div class="summary-icon">
@@ -36,7 +36,7 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         </div>
         <p class="summary-label">Utang Belum Lunas</p>
-        <p class="summary-value">Rp 0</p>
+        <p class="summary-value">{{ formatRupiah(utangStore.ringkasan?.total_utang || 0) }}</p>
       </div>
     </section>
 
@@ -113,8 +113,12 @@
 <script setup lang="ts">
 import { computed, onMounted } from "vue";
 import { useProdukStore } from "@/stores/produk";
+import { useUtangStore } from "@/stores/utang";
+import { useLaporanStore } from "@/stores/laporan";
 
 const produkStore = useProdukStore();
+const utangStore = useUtangStore();
+const laporanStore = useLaporanStore();
 
 const stokMenipis = computed(() =>
   produkStore.produkList.filter((p) => p.stok <= p.stok_minimum)
@@ -137,8 +141,14 @@ const todayFormatted = computed(() => {
   });
 });
 
+function formatRupiah(angka: number) {
+  return "Rp " + (angka || 0).toLocaleString("id-ID");
+}
+
 onMounted(() => {
   produkStore.fetchProduk();
+  utangStore.fetchRingkasan();
+  laporanStore.fetchHarian();
 });
 </script>
 

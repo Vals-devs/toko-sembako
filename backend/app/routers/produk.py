@@ -29,7 +29,7 @@ def get_stok_menipis(db: Session = Depends(get_db)):
 
 @router.post("/")
 def tambah_produk(produk: ProdukSchema, db: Session = Depends(get_db)):
-    db_produk = Produk(**produk.dict())
+    db_produk = Produk(**produk.model_dump())
     db.add(db_produk)
     db.commit()
     db.refresh(db_produk)
@@ -40,7 +40,7 @@ def update_produk(id: int, produk: ProdukSchema, db: Session = Depends(get_db)):
     db_produk = db.query(Produk).filter(Produk.id == id).first()
     if not db_produk:
         raise HTTPException(status_code=404, detail="Produk tidak ditemukan")
-    for key, value in produk.dict().items():
+    for key, value in produk.model_dump().items():
         setattr(db_produk, key, value)
     db.commit()
     db.refresh(db_produk)

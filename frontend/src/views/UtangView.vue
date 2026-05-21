@@ -13,11 +13,11 @@
     <div class="summary-cards animate-fade-in-up delay-1">
       <div class="summary-card summary-card--debt">
         <p class="summary-label">Total Utang Belum Lunas</p>
-        <p class="summary-amount">{{ formatRupiah(totalUtangBelumLunas) }}</p>
+        <p class="summary-amount">{{ formatRupiah(utangStore.ringkasan.total_utang) }}</p>
       </div>
       <div class="summary-card summary-card--count">
         <p class="summary-label">Pelanggan Berutang</p>
-        <p class="summary-amount">{{ pelangganBerutang }} orang</p>
+        <p class="summary-amount">{{ utangStore.ringkasan.jumlah_pelanggan }} orang</p>
       </div>
     </div>
 
@@ -31,13 +31,18 @@
         @click="activeFilter = f.key"
       >
         {{ f.label }}
-        <span v-if="f.count > 0" class="filter-count">{{ f.count }}</span>
       </button>
     </div>
 
+    <!-- Loading State -->
+    <div v-if="utangStore.loading" class="text-center py-12 animate-fade-in">
+      <div class="btn-loading-spinner" style="border-top-color: var(--primary-600); width: 32px; height: 32px;"></div>
+      <p style="margin-top: 8px; color: var(--text-secondary); font-size: 14px;">Memuat catatan utang...</p>
+    </div>
+
     <!-- Utang List -->
-    <div class="utang-list animate-fade-in-up delay-3">
-      <div v-if="filteredUtang.length === 0" class="empty-state">
+    <div v-else class="utang-list animate-fade-in-up delay-3">
+      <div v-if="utangStore.utangList.length === 0" class="empty-state">
         <div class="empty-icon">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         </div>
@@ -46,19 +51,19 @@
       </div>
 
       <div
-        v-for="(item, index) in filteredUtang"
-        :key="index"
+        v-for="item in utangStore.utangList"
+        :key="item.id"
         class="utang-card"
         :class="{ 'utang-card--lunas': item.lunas }"
       >
         <div class="utang-main">
           <div class="utang-avatar">
-            {{ item.nama.charAt(0).toUpperCase() }}
+            {{ item.nama_pelanggan.charAt(0).toUpperCase() }}
           </div>
           <div class="utang-info">
-            <h3 class="utang-name">{{ item.nama }}</h3>
-            <p class="utang-date">{{ item.tanggal }}</p>
-            <p v-if="item.catatan" class="utang-note">{{ item.catatan }}</p>
+            <h3 class="utang-name">{{ item.nama_pelanggan }}</h3>
+            <p class="utang-date">{{ formatTanggal(item.tanggal) }}</p>
+            <p v-if="item.keterangan" class="utang-note">{{ item.keterangan }}</p>
           </div>
           <div class="utang-right">
             <span class="utang-amount" :class="item.lunas ? 'utang-amount--lunas' : ''">
@@ -70,9 +75,10 @@
           </div>
         </div>
         <div v-if="!item.lunas" class="utang-actions">
-          <button @click="tandaiLunas(index)" class="btn-lunas">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            Tandai Lunas
+          <button @click="tandaiLunas(item.id)" class="btn-lunas" :disabled="isPaying === item.id">
+            <svg v-if="isPaying !== item.id" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span v-else class="btn-loading-spinner" style="width: 14px; height: 14px; border-width: 1.5px; border-top-color: var(--primary-600); margin-right: 6px;"></span>
+            {{ isPaying === item.id ? 'Memproses...' : 'Tandai Lunas' }}
           </button>
         </div>
       </div>
@@ -121,45 +127,29 @@
               </div>
             </div>
             <div class="modal-buttons">
-              <button @click="showForm = false" class="btn-secondary">Batal</button>
-              <button @click="simpanUtang" class="btn-primary" id="btn-simpan-utang">Tambah Utang</button>
+              <button @click="showForm = false" class="btn-secondary" :disabled="isSubmitting">Batal</button>
+              <button @click="simpanUtang" class="btn-primary" id="btn-simpan-utang" :disabled="isSubmitting">
+                <span v-if="isSubmitting" class="btn-loading-spinner" style="margin-right: 6px; width: 14px; height: 14px;"></span>
+                {{ isSubmitting ? 'Menyimpan...' : 'Tambah Utang' }}
+              </button>
             </div>
           </div>
         </div>
       </Transition>
     </Teleport>
-
-    <!-- Info Banner -->
-    <div class="info-banner animate-fade-in-up delay-4">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-      <p>Data di atas adalah contoh tampilan. Fitur utang akan tersambung ke database setelah API backend siap.</p>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
-
-interface UtangItem {
-  nama: string;
-  jumlah: number;
-  tanggal: string;
-  catatan: string;
-  lunas: boolean;
-}
+import { ref, computed, onMounted, watch } from "vue";
+import { useUtangStore } from "@/stores/utang";
 
 type FilterKey = "semua" | "belum" | "lunas";
 
 const activeFilter = ref<FilterKey>("semua");
 const showForm = ref(false);
 
-const utangList = ref<UtangItem[]>([
-  { nama: "Pak Ahmad", jumlah: 75000, tanggal: "18 Mei 2026", catatan: "Beli gula 3kg + minyak 2L", lunas: false },
-  { nama: "Ibu Rini", jumlah: 120000, tanggal: "15 Mei 2026", catatan: "Sembako bulanan", lunas: false },
-  { nama: "Dg. Maming", jumlah: 45000, tanggal: "12 Mei 2026", catatan: "Rokok + kopi", lunas: true },
-  { nama: "Kak Lia", jumlah: 200000, tanggal: "10 Mei 2026", catatan: "Beras 10kg", lunas: false },
-  { nama: "Pak Dullah", jumlah: 30000, tanggal: "8 Mei 2026", catatan: "", lunas: true },
-]);
+const utangStore = useUtangStore();
 
 const newUtang = ref({
   nama: "",
@@ -167,51 +157,70 @@ const newUtang = ref({
   catatan: "",
 });
 
-const totalUtangBelumLunas = computed(() =>
-  utangList.value.filter((u) => !u.lunas).reduce((sum, u) => sum + u.jumlah, 0)
-);
-
-const pelangganBerutang = computed(() =>
-  utangList.value.filter((u) => !u.lunas).length
-);
-
-const filteredUtang = computed(() => {
-  if (activeFilter.value === "belum") return utangList.value.filter((u) => !u.lunas);
-  if (activeFilter.value === "lunas") return utangList.value.filter((u) => u.lunas);
-  return utangList.value;
-});
-
-const filters = computed(() => [
-  { key: "semua" as FilterKey, label: "Semua", count: utangList.value.length },
-  { key: "belum" as FilterKey, label: "Belum Lunas", count: utangList.value.filter((u) => !u.lunas).length },
-  { key: "lunas" as FilterKey, label: "Lunas", count: utangList.value.filter((u) => u.lunas).length },
-]);
+const filters = [
+  { key: "semua" as FilterKey, label: "Semua" },
+  { key: "belum" as FilterKey, label: "Belum Lunas" },
+  { key: "lunas" as FilterKey, label: "Lunas" },
+];
 
 function formatRupiah(angka: number) {
-  return "Rp " + angka.toLocaleString("id-ID");
+  return "Rp " + (angka || 0).toLocaleString("id-ID");
 }
 
-function tandaiLunas(index: number) {
-  const globalIndex = utangList.value.indexOf(filteredUtang.value[index]);
-  if (globalIndex !== -1) {
-    utangList.value[globalIndex].lunas = true;
+function formatTanggal(isoString: string) {
+  if (!isoString) return "";
+  const d = new Date(isoString);
+  return d.toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+const isPaying = ref<number | null>(null);
+
+async function tandaiLunas(id: number) {
+  if (isPaying.value !== null) return;
+  isPaying.value = id;
+  try {
+    await utangStore.tandaiLunas(id);
+    await utangStore.fetchUtang(activeFilter.value);
+  } catch (error) {
+    alert("Gagal menandai lunas");
+  } finally {
+    isPaying.value = null;
   }
 }
 
-function simpanUtang() {
-  if (!newUtang.value.nama || newUtang.value.jumlah <= 0) return;
+const isSubmitting = ref(false);
 
-  utangList.value.unshift({
-    nama: newUtang.value.nama,
-    jumlah: newUtang.value.jumlah,
-    tanggal: new Date().toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }),
-    catatan: newUtang.value.catatan,
-    lunas: false,
-  });
-
-  newUtang.value = { nama: "", jumlah: 0, catatan: "" };
-  showForm.value = false;
+async function simpanUtang() {
+  if (!newUtang.value.nama || newUtang.value.jumlah <= 0 || isSubmitting.value) return;
+  isSubmitting.value = true;
+  try {
+    await utangStore.tambahUtang({
+      nama_pelanggan: newUtang.value.nama,
+      jumlah: newUtang.value.jumlah,
+      keterangan: newUtang.value.catatan,
+    });
+    newUtang.value = { nama: "", jumlah: 0, catatan: "" };
+    showForm.value = false;
+    await utangStore.fetchUtang(activeFilter.value);
+  } catch (error) {
+    alert("Gagal menambahkan utang");
+  } finally {
+    isSubmitting.value = false;
+  }
 }
+
+watch(activeFilter, (newFilter) => {
+  utangStore.fetchUtang(newFilter);
+});
+
+onMounted(() => {
+  utangStore.fetchUtang(activeFilter.value);
+  utangStore.fetchRingkasan();
+});
 </script>
 
 <style scoped>

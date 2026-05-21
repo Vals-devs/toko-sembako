@@ -18,103 +18,108 @@
       </button>
     </div>
 
-    <!-- Summary Cards -->
-    <div class="summary-grid animate-fade-in-up delay-2">
-      <div class="summary-card summary-card--income">
-        <div class="summary-card-header">
-          <span class="summary-label">Pemasukan</span>
-          <div class="summary-icon-sm">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>
-          </div>
-        </div>
-        <p class="summary-amount">{{ formatRupiah(mockData[activePeriod].pemasukan) }}</p>
-        <p class="summary-change summary-change--up">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
-          {{ mockData[activePeriod].pemasukanPct }}
-        </p>
-      </div>
-
-      <div class="summary-card summary-card--expense">
-        <div class="summary-card-header">
-          <span class="summary-label">Pengeluaran</span>
-          <div class="summary-icon-sm summary-icon-sm--red">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/></svg>
-          </div>
-        </div>
-        <p class="summary-amount">{{ formatRupiah(mockData[activePeriod].pengeluaran) }}</p>
-        <p class="summary-change summary-change--down">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-          {{ mockData[activePeriod].pengeluaranPct }}
-        </p>
-      </div>
-
-      <div class="summary-card summary-card--profit">
-        <div class="summary-card-header">
-          <span class="summary-label">Laba Bersih</span>
-          <div class="summary-icon-sm summary-icon-sm--green">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-          </div>
-        </div>
-        <p class="summary-amount summary-amount--highlight">
-          {{ formatRupiah(mockData[activePeriod].pemasukan - mockData[activePeriod].pengeluaran) }}
-        </p>
-      </div>
+    <!-- Loading State -->
+    <div v-if="laporanStore.loading" class="loading-state text-center py-8">
+      <div class="btn-loading-spinner" style="border-top-color: var(--primary-600); width: 32px; height: 32px;"></div>
+      <p style="margin-top: 8px; color: var(--text-secondary); font-size: 14px;">Memuat data laporan...</p>
     </div>
 
-    <!-- Bar Chart (Pure CSS) -->
-    <div class="chart-section animate-fade-in-up delay-3">
-      <h2 class="section-title">Grafik Penjualan</h2>
-      <div class="chart-container">
-        <div class="chart-bars">
-          <div
-            v-for="(bar, index) in chartBars"
-            :key="index"
-            class="chart-bar-wrapper"
-          >
+    <template v-else>
+      <!-- Summary Cards -->
+      <div class="summary-grid animate-fade-in-up delay-2">
+        <div class="summary-card summary-card--income">
+          <div class="summary-card-header">
+            <span class="summary-label">Pemasukan</span>
+            <div class="summary-icon-sm">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>
+            </div>
+          </div>
+          <p class="summary-amount">{{ formatRupiah(laporanStore.ringkasan?.pemasukan || 0) }}</p>
+          <p class="summary-change" style="color: var(--primary-600);">
+            {{ laporanStore.ringkasan?.jumlah_transaksi || 0 }} Transaksi
+          </p>
+        </div>
+
+        <div class="summary-card summary-card--expense">
+          <div class="summary-card-header">
+            <span class="summary-label">Pengeluaran (HPP)</span>
+            <div class="summary-icon-sm summary-icon-sm--red">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/></svg>
+            </div>
+          </div>
+          <p class="summary-amount">{{ formatRupiah(laporanStore.ringkasan?.pengeluaran || 0) }}</p>
+        </div>
+
+        <div class="summary-card summary-card--profit">
+          <div class="summary-card-header">
+            <span class="summary-label">Laba Bersih</span>
+            <div class="summary-icon-sm summary-icon-sm--green">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            </div>
+          </div>
+          <p class="summary-amount summary-amount--highlight">
+            {{ formatRupiah(laporanStore.ringkasan?.laba_bersih || 0) }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Bar Chart (Pure CSS) -->
+      <div class="chart-section animate-fade-in-up delay-3">
+        <h2 class="section-title">Grafik Penjualan</h2>
+        <div class="chart-container">
+          <div v-if="chartBars.length === 0" class="text-center w-full py-12 text-neutral-400 font-medium text-sm">
+            Belum ada data penjualan pada periode ini
+          </div>
+          <div v-else class="chart-bars">
             <div
-              class="chart-bar"
-              :style="{ height: bar.height + '%', animationDelay: index * 60 + 'ms' }"
-            ></div>
-            <span class="chart-bar-label">{{ bar.label }}</span>
+              v-for="(bar, index) in chartBars"
+              :key="index"
+              class="chart-bar-wrapper"
+            >
+              <div
+                class="chart-bar"
+                :style="{ height: bar.height + '%', animationDelay: index * 60 + 'ms' }"
+                :title="formatRupiah(bar.value)"
+              ></div>
+              <span class="chart-bar-label">{{ bar.label }}</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Recent Transactions -->
-    <div class="section animate-fade-in-up delay-4">
-      <h2 class="section-title">Transaksi Terakhir</h2>
-      <div class="transaction-list">
-        <div
-          v-for="(tx, i) in recentTransactions"
-          :key="i"
-          class="transaction-item"
-        >
-          <div class="tx-icon" :class="'tx-icon--' + tx.type">
-            <svg v-if="tx.type === 'sale'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
-            <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      <!-- Recent Transactions -->
+      <div class="section animate-fade-in-up delay-4">
+        <h2 class="section-title">Transaksi Terakhir</h2>
+        <div class="transaction-list">
+          <div v-if="laporanStore.transaksiTerakhir.length === 0" class="text-center py-8 text-neutral-400 font-medium text-sm">
+            Belum ada transaksi
           </div>
-          <div class="tx-info">
-            <h4 class="tx-name">{{ tx.name }}</h4>
-            <p class="tx-time">{{ tx.time }}</p>
+          <div
+            v-else
+            v-for="tx in laporanStore.transaksiTerakhir"
+            :key="tx.id"
+            class="transaction-item"
+          >
+            <div class="tx-icon tx-icon--sale">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+            </div>
+            <div class="tx-info">
+              <h4 class="tx-name">Penjualan #{{ tx.id }}</h4>
+              <p class="tx-time">{{ formatTanggal(tx.tanggal) }} · {{ tx.jumlah_item }} item</p>
+            </div>
+            <span class="tx-amount tx-amount--sale">
+              +{{ formatRupiah(tx.total) }}
+            </span>
           </div>
-          <span class="tx-amount" :class="'tx-amount--' + tx.type">
-            {{ tx.type === "sale" ? "+" : "-" }}{{ formatRupiah(tx.amount) }}
-          </span>
         </div>
       </div>
-    </div>
-
-    <!-- Empty State Hint -->
-    <div class="info-banner animate-fade-in-up delay-5">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-      <p>Data di atas adalah contoh tampilan. Laporan real akan muncul setelah transaksi dicatat melalui Kasir.</p>
-    </div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
+import { useLaporanStore } from "@/stores/laporan";
 
 type PeriodKey = "hari" | "minggu" | "bulan";
 
@@ -125,40 +130,40 @@ const periods = [
   { key: "bulan" as PeriodKey, label: "Bulan Ini" },
 ];
 
-const mockData: Record<PeriodKey, { pemasukan: number; pengeluaran: number; pemasukanPct: string; pengeluaranPct: string }> = {
-  hari: { pemasukan: 850000, pengeluaran: 320000, pemasukanPct: "+12%", pengeluaranPct: "-5%" },
-  minggu: { pemasukan: 4250000, pengeluaran: 1800000, pemasukanPct: "+8%", pengeluaranPct: "+3%" },
-  bulan: { pemasukan: 18500000, pengeluaran: 7200000, pemasukanPct: "+15%", pengeluaranPct: "+2%" },
-};
+const laporanStore = useLaporanStore();
 
 const chartBars = computed(() => {
-  const labels: Record<PeriodKey, string[]> = {
-    hari: ["08", "09", "10", "11", "12", "13", "14"],
-    minggu: ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"],
-    bulan: ["Mg1", "Mg2", "Mg3", "Mg4"],
-  };
-  const heights: Record<PeriodKey, number[]> = {
-    hari: [30, 55, 80, 45, 90, 60, 40],
-    minggu: [65, 45, 70, 85, 50, 95, 35],
-    bulan: [60, 75, 85, 90],
-  };
-  return labels[activePeriod.value].map((label, i) => ({
-    label,
-    height: heights[activePeriod.value][i],
+  if (!laporanStore.grafik || laporanStore.grafik.length === 0) return [];
+  const maxVal = Math.max(...laporanStore.grafik.map((g) => g.value), 1);
+  return laporanStore.grafik.map((g) => ({
+    label: g.label,
+    height: Math.round((g.value / maxVal) * 100),
+    value: g.value,
   }));
 });
 
-const recentTransactions = [
-  { name: "Penjualan #047", time: "Hari ini, 14:30", amount: 125000, type: "sale" },
-  { name: "Restok Gula Pasir", time: "Hari ini, 10:15", amount: 280000, type: "expense" },
-  { name: "Penjualan #046", time: "Kemarin, 16:45", amount: 87000, type: "sale" },
-  { name: "Penjualan #045", time: "Kemarin, 11:20", amount: 156000, type: "sale" },
-  { name: "Restok Minyak Goreng", time: "Kemarin, 08:00", amount: 450000, type: "expense" },
-];
-
 function formatRupiah(angka: number) {
-  return "Rp " + angka.toLocaleString("id-ID");
+  return "Rp " + (angka || 0).toLocaleString("id-ID");
 }
+
+function formatTanggal(isoString: string) {
+  if (!isoString) return "";
+  const d = new Date(isoString);
+  return d.toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+watch(activePeriod, (newPeriod) => {
+  laporanStore.fetchAll(newPeriod);
+});
+
+onMounted(() => {
+  laporanStore.fetchAll(activePeriod.value);
+});
 </script>
 
 <style scoped>

@@ -139,10 +139,11 @@
                 </div>
               </div>
               <div class="modal-buttons">
-                <button @click="showPayModal = false" class="btn-secondary">Batal</button>
-                <button @click="completePay" class="btn-primary" id="btn-confirm-bayar">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  Selesai
+                <button @click="showPayModal = false" class="btn-secondary" :disabled="isSubmitting">Batal</button>
+                <button @click="completePay" class="btn-primary" id="btn-confirm-bayar" :disabled="isSubmitting">
+                  <svg v-if="!isSubmitting" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span v-else class="btn-loading-spinner"></span>
+                  {{ isSubmitting ? 'Menyimpan...' : 'Selesai' }}
                 </button>
               </div>
             </div>
@@ -160,14 +161,26 @@
         </div>
       </Transition>
     </Teleport>
+
+    <!-- Error Toast -->
+    <Teleport to="body">
+      <Transition name="toast">
+        <div v-if="showErrorToast" class="toast-error">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          {{ errorMessage }}
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
 import { useProdukStore } from "@/stores/produk";
+import { useTransaksiStore } from "@/stores/transaksi";
 
 const produkStore = useProdukStore();
+const transaksiStore = useTransaksiStore();
 
 interface CartItem {
   id: number;
@@ -182,6 +195,9 @@ const showDropdown = ref(false);
 const cart = ref<CartItem[]>([]);
 const showPayModal = ref(false);
 const showToast = ref(false);
+const showErrorToast = ref(false);
+const errorMessage = ref("");
+const isSubmitting = ref(false);
 
 const todayFormatted = computed(() =>
   new Date().toLocaleDateString("id-ID", {
@@ -225,14 +241,20 @@ function addToCart(produk: any) {
 }
 
 function increaseQty(index: number) {
-  cart.value[index].qty++;
+  const item = cart.value[index];
+  if (item) {
+    item.qty++;
+  }
 }
 
 function decreaseQty(index: number) {
-  if (cart.value[index].qty > 1) {
-    cart.value[index].qty--;
-  } else {
-    removeFromCart(index);
+  const item = cart.value[index];
+  if (item) {
+    if (item.qty > 1) {
+      item.qty--;
+    } else {
+      removeFromCart(index);
+    }
   }
 }
 
@@ -240,13 +262,38 @@ function removeFromCart(index: number) {
   cart.value.splice(index, 1);
 }
 
-function completePay() {
-  showPayModal.value = false;
-  cart.value = [];
-  showToast.value = true;
-  setTimeout(() => {
-    showToast.value = false;
-  }, 3000);
+async function completePay() {
+  if (isSubmitting.value) return;
+  isSubmitting.value = true;
+  try {
+    const data = {
+      items: cart.value.map((item) => ({
+        produk_id: item.id,
+        jumlah: item.qty,
+      })),
+      bayar: grandTotal.value,
+      catatan: "",
+    };
+    await transaksiStore.catatTransaksi(data);
+    
+    // Refresh products to sync the updated stocks
+    await produkStore.fetchProduk();
+    
+    showPayModal.value = false;
+    cart.value = [];
+    showToast.value = true;
+    setTimeout(() => {
+      showToast.value = false;
+    }, 3000);
+  } catch (error: any) {
+    errorMessage.value = error.message || "Gagal menyimpan transaksi";
+    showErrorToast.value = true;
+    setTimeout(() => {
+      showErrorToast.value = false;
+    }, 4000);
+  } finally {
+    isSubmitting.value = false;
+  }
 }
 
 // Close dropdown when clicking outside
@@ -789,6 +836,39 @@ onMounted(() => {
   font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
+}
+
+.toast-error {
+  position: fixed;
+  bottom: calc(var(--bottom-nav-height) + 20px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-toast);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background: var(--danger-600);
+  color: white;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.btn-loading-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .toast-enter-active {
