@@ -11,12 +11,8 @@ app = FastAPI(title="API Toko Sembako")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:5175",
-    ],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -26,3 +22,12 @@ app.include_router(produk.router)
 app.include_router(transaksi.router)
 app.include_router(utang.router)
 app.include_router(laporan.router)
+
+@app.get("/api/seed")
+def run_seeding():
+    try:
+        from seed import seed_db
+        seed_db()
+        return {"status": "success", "message": "Database successfully seeded or already has data!"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
