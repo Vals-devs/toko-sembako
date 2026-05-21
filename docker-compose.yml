@@ -1,7 +1,24 @@
 version: '3.8'
 
 services:
-  # 1. Backend Service (FastAPI)
+  # 1. Database Service (PostgreSQL Lokal)
+  db:
+    image: postgres:15-alpine
+    container_name: toko-sembako-db
+    restart: always
+    environment:
+      - POSTGRES_DB=toko_sembako
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=Ivalpermana
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d toko_sembako"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 2. Backend Service (FastAPI)
   backend:
     build:
       context: ./backend
@@ -12,11 +29,14 @@ services:
     ports:
       - "127.0.0.1:8000:7860" # Hanya diakses via local / Caddy untuk keamanan
     environment:
-      # Koneksi database Supabase
-      - DATABASE_URL=postgresql://postgres:Ivalpermana@db.thtfwypskzknwgbzdrvv.supabase.co:5432/postgres
+      # Mengarah ke kontainer database lokal 'db'
+      - DATABASE_URL=postgresql://postgres:Ivalpermana@db:5432/toko_sembako
     restart: always
+    depends_on:
+      db:
+        condition: service_healthy # Backend hanya jalan setelah database siap
 
-  # 2. Frontend Service (Vue 3 PWA)
+  # 3. Frontend Service (Vue 3 PWA)
   frontend:
     build:
       context: ./frontend
@@ -32,7 +52,7 @@ services:
     depends_on:
       - backend
 
-  # 3. Caddy Service (Reverse Proxy & Routing Internal)
+  # 4. Caddy Service (Reverse Proxy & Routing Internal)
   caddy:
     image: caddy:2-alpine
     container_name: toko-sembako-caddy
@@ -49,7 +69,7 @@ services:
       - frontend
       - backend
 
-  # 4. Ngrok Tunnel Service (Menghubungkan Server Lokal ke Internet Bebas Blokir ISP)
+  # 5. Ngrok Tunnel Service (Menghubungkan Server Lokal ke Internet Bebas Blokir ISP)
   ngrok:
     image: ngrok/ngrok:latest
     container_name: toko-sembako-ngrok
@@ -68,3 +88,4 @@ services:
 volumes:
   caddy_data:
   caddy_config:
+  postgres_data: # Menyimpan data PostgreSQL secara permanen di server Ubuntu Anda
