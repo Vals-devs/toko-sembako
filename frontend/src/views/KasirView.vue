@@ -344,6 +344,7 @@ onMounted(() => {
 /* Search */
 .search-section {
   position: relative;
+  z-index: 50;
 }
 
 .search-bar {
