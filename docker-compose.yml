@@ -23,7 +23,7 @@ services:
       dockerfile: Dockerfile
       args:
         # API URL diatur relatif (/api) agar frontend dan backend berkomunikasi
-        # di domain yang sama lewat Caddy reverse proxy
+        # di domain yang sama lewat Caddy/Ngrok
         - VITE_API_URL=/api
     container_name: toko-sembako-frontend
     ports:
@@ -32,16 +32,15 @@ services:
     depends_on:
       - backend
 
-  # 3. Caddy Service (Reverse Proxy & HTTPS Otomatis Let's Encrypt)
+  # 3. Caddy Service (Reverse Proxy & Routing Internal)
   caddy:
     image: caddy:2-alpine
     container_name: toko-sembako-caddy
     restart: always
     dns:
-      - 192.168.1.1 # Menggunakan DNS router lokal untuk memintas pemblokiran DNS ISP
+      - 192.168.1.1
     ports:
-      - "80:80"   # HTTP
-      - "443:443" # HTTPS (SSL otomatis)
+      - "127.0.0.1:80:80" # Diikat ke localhost karena traffic dari luar masuk lewat tunnel Ngrok
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
@@ -50,19 +49,21 @@ services:
       - frontend
       - backend
 
-  # 4. DuckDNS Service (Pembaruan IP Publik Otomatis)
-  duckdns:
-    image: lscr.io/linuxserver/duckdns:latest
-    container_name: toko-sembako-duckdns
+  # 4. Ngrok Tunnel Service (Menghubungkan Server Lokal ke Internet Bebas Blokir ISP)
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: toko-sembako-ngrok
+    restart: always
     dns:
       - 192.168.1.1
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Asia/Makassar
-      - SUBDOMAINS=toko-sembako-ival # Subdomain DuckDNS Anda
-      - TOKEN=0bb88a5e-9cc6-4294-ab23-323f7e1befff # Token DuckDNS Anda
-    restart: always
+      - NGROK_AUTHTOKEN=3E24uTY7VKHHJjCg9pEEoVl4cg3_4mkqbv7MGSn6JswRt1kCW # Token Ngrok Anda
+    command:
+      - http
+      - caddy:80
+      - --domain=granular-sinuous-falsify.ngrok-free.dev
+    depends_on:
+      - caddy
 
 volumes:
   caddy_data:

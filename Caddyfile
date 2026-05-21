@@ -1,7 +1,7 @@
-# Konfigurasi Caddy untuk Toko Sembako PWA
-# Ganti tokosembakoival.duckdns.org dengan subdomain DuckDNS Anda sendiri
+# Konfigurasi Caddy untuk Toko Sembako PWA via Ngrok
+# Caddy berjalan pada port HTTP 80 karena SSL telah ditangani otomatis oleh Ngrok Cloud
 
-toko-sembako-ival.duckdns.org {
+:80 {
     # Mengarahkan request API, docs, dan openapi ke service backend FastAPI
     reverse_proxy /api/* backend:7860
     reverse_proxy /docs backend:7860
@@ -10,6 +10,6 @@ toko-sembako-ival.duckdns.org {
     # Mengarahkan request lainnya ke service frontend Vue 3
     reverse_proxy frontend:80
 
-    # Mengaktifkan enkoder kompresi gzip & zstd untuk menghemat bandwidth
+    # Mengaktifkan kompresi gzip & zstd untuk menghemat bandwidth
     encode gzip zstd
 }
