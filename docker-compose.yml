@@ -13,7 +13,7 @@ services:
       - "127.0.0.1:8000:7860" # Hanya diakses via local / Caddy untuk keamanan
     environment:
       # Koneksi database Supabase
-      - DATABASE_URL=postgresql://postgres.thtfwypskzknwgbzdrvv:Ivalpermana%5D@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres
+      - DATABASE_URL=postgresql://postgres:Ivalpermana@db.thtfwypskzknwgbzdrvv.supabase.co:5432/postgres
     restart: always
 
   # 2. Frontend Service (Vue 3 PWA)
