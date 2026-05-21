@@ -31,3 +31,12 @@ def run_seeding():
         return {"status": "success", "message": "Database successfully seeded or already has data!"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+@app.get("/api/clear")
+def run_clearing():
+    try:
+        from clear_db import clear_db
+        clear_db()
+        return {"status": "success", "message": "Database successfully cleared!"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
