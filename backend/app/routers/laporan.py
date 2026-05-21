@@ -1,17 +1,19 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from app.database import get_db
 from app.models.transaksi import Transaksi, DetailTransaksi
 from app.models.produk import Produk
 
 router = APIRouter(prefix="/api/laporan", tags=["Laporan"])
 
+def get_wita_today():
+    return datetime.now(timezone(timedelta(hours=8))).date()
 
 def _get_date_range(periode: str):
     """Return (start_date, end_date) for a given period."""
-    today = date.today()
+    today = get_wita_today()
     if periode == "minggu":
         start = today - timedelta(days=today.weekday())  # Monday
         return start, today
@@ -24,7 +26,7 @@ def _get_date_range(periode: str):
 
 @router.get("/harian")
 def laporan_harian(db: Session = Depends(get_db)):
-    hari_ini = date.today()
+    hari_ini = get_wita_today()
     transaksi = db.query(Transaksi).filter(
         func.date(Transaksi.tanggal) == hari_ini
     ).all()
@@ -79,7 +81,7 @@ def laporan_grafik(
     periode: str = Query("hari", pattern="^(hari|minggu|bulan)$"),
     db: Session = Depends(get_db),
 ):
-    today = date.today()
+    today = get_wita_today()
     data = []
 
     if periode == "hari":

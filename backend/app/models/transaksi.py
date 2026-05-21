@@ -1,13 +1,16 @@
 from sqlalchemy import Column, Integer, Float, DateTime, ForeignKey, String
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
 from app.database import Base
+from datetime import datetime, timedelta, timezone
+
+def get_wita_now():
+    return datetime.now(timezone(timedelta(hours=8))).replace(tzinfo=None)
 
 class Transaksi(Base):
     __tablename__ = "transaksi"
 
     id = Column(Integer, primary_key=True, index=True)
-    tanggal = Column(DateTime, default=func.now())
+    tanggal = Column(DateTime, default=get_wita_now)
     total = Column(Float, nullable=False)
     bayar = Column(Float, nullable=False)
     kembalian = Column(Float, nullable=False)
