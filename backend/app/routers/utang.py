@@ -56,8 +56,18 @@ def tandai_lunas(id: int, db: Session = Depends(get_db)):
     db_utang = db.query(Utang).filter(Utang.id == id).first()
     if not db_utang:
         raise HTTPException(status_code=404, detail="Data utang tidak ditemukan")
-    db_utang.lunas = True
-    db_utang.tanggal_lunas = datetime.now()
+    
+    # Simpan salinan data untuk dikembalikan ke frontend agar tidak merusak state
+    response_data = {
+        "id": db_utang.id,
+        "nama_pelanggan": db_utang.nama_pelanggan,
+        "jumlah": db_utang.jumlah,
+        "keterangan": db_utang.keterangan,
+        "tanggal": db_utang.tanggal,
+        "lunas": True,
+        "tanggal_lunas": datetime.now()
+    }
+    
+    db.delete(db_utang)
     db.commit()
-    db.refresh(db_utang)
-    return db_utang
+    return response_data
