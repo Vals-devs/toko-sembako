@@ -1,28 +1,63 @@
 version: '3.8'
 
 services:
+  # 1. Backend Service (FastAPI)
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: toko-sembako-backend
     ports:
-      - "8000:7860"
+      - "127.0.0.1:8000:7860" # Hanya diakses via local / Caddy untuk keamanan
     environment:
-      # Koneksi Supabase Pooler IPv4
+      # Koneksi database Supabase
       - DATABASE_URL=postgresql://postgres.thtfwypskzknwgbzdrvv:Ivalpermana%5D@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres
     restart: always
 
+  # 2. Frontend Service (Vue 3 PWA)
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        # Ganti dengan domain publik backend Anda (misal via Cloudflare Tunnel atau IP Server Anda)
-        - VITE_API_URL=https://api-toko.yourdomain.com
+        # API URL diatur relatif (/api) agar frontend dan backend berkomunikasi
+        # di domain yang sama lewat Caddy reverse proxy
+        - VITE_API_URL=/api
     container_name: toko-sembako-frontend
     ports:
-      - "8080:80"
+      - "127.0.0.1:8080:80" # Hanya diakses via local / Caddy
     restart: always
     depends_on:
       - backend
+
+  # 3. Caddy Service (Reverse Proxy & HTTPS Otomatis Let's Encrypt)
+  caddy:
+    image: caddy:2-alpine
+    container_name: toko-sembako-caddy
+    restart: always
+    ports:
+      - "80:80"   # HTTP
+      - "443:443" # HTTPS (SSL otomatis)
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+
+  # 4. DuckDNS Service (Pembaruan IP Publik Otomatis)
+  duckdns:
+    image: lscr.io/linuxserver/duckdns:latest
+    container_name: toko-sembako-duckdns
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Makassar
+      - SUBDOMAINS=toko-sembako-ival # Subdomain DuckDNS Anda
+      - TOKEN=0bb88a5e-9cc6-4294-ab23-323f7e1befff # Token DuckDNS Anda
+    restart: always
+
+volumes:
+  caddy_data:
+  caddy_config:
