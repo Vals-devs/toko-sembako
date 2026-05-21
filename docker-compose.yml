@@ -69,19 +69,16 @@ services:
       - frontend
       - backend
 
-  # 5. Ngrok Tunnel Service (Menghubungkan Server Lokal ke Internet Bebas Blokir ISP)
-  ngrok:
-    image: ngrok/ngrok:latest
-    container_name: toko-sembako-ngrok
+  # 5. Cloudflare Tunnel Service (Menghubungkan Server ke Internet lewat Domain Pribadi)
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: toko-sembako-tunnel
     restart: always
     dns:
       - 192.168.1.1
     environment:
-      - NGROK_AUTHTOKEN=3E24uTY7VKHHJjCg9pEEoVl4cg3_4mkqbv7MGSn6JswRt1kCW # Token Ngrok Anda
-    command:
-      - http
-      - caddy:80
-      - --domain=granular-sinuous-falsify.ngrok-free.dev
+      - TUNNEL_TOKEN=eyJhIjoiNjZmNTEzZTFjMmU1YzFiNjQwNjE0NDIwNGNlMmU3NmQiLCJ0IjoiNzVmNTEyMWUtNTQ2MS00ZTIyLWEzNDYtYzY2OGM2NDgwNjQyIiwicyI6Ik56azNNVEJqT0dJdE5UaG1OQzAwTldJMUxXRTJPV1l0T0dZd04ySXlNRGsyT0dGbCJ9
+    command: tunnel --no-autoupdate run
     depends_on:
       - caddy
 
