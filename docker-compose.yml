@@ -7,6 +7,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: toko-sembako-backend
+    dns:
+      - 192.168.1.1
     ports:
       - "127.0.0.1:8000:7860" # Hanya diakses via local / Caddy untuk keamanan
     environment:
@@ -35,6 +37,8 @@ services:
     image: caddy:2-alpine
     container_name: toko-sembako-caddy
     restart: always
+    dns:
+      - 192.168.1.1 # Menggunakan DNS router lokal untuk memintas pemblokiran DNS ISP
     ports:
       - "80:80"   # HTTP
       - "443:443" # HTTPS (SSL otomatis)
@@ -50,6 +54,8 @@ services:
   duckdns:
     image: lscr.io/linuxserver/duckdns:latest
     container_name: toko-sembako-duckdns
+    dns:
+      - 192.168.1.1
     environment:
       - PUID=1000
       - PGID=1000
