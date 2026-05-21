@@ -43,7 +43,7 @@
     </div>
 
     <!-- Quick Add Buttons -->
-    <div v-if="produkStore.produkList.length > 0" class="quick-add scroll-x animate-fade-in-up delay-2">
+    <div v-if="produkStore.produkList.length > 0 && !showDropdown" class="quick-add scroll-x animate-fade-in-up delay-2">
       <button
         v-for="produk in quickProducts"
         :key="produk.id"
