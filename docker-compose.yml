@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: toko-sembako-backend
+    ports:
+      - "8000:7860"
+    environment:
+      # Koneksi Supabase Pooler IPv4
+      - DATABASE_URL=postgresql://postgres.thtfwypskzknwgbzdrvv:Ivalpermana%5D@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Ganti dengan domain publik backend Anda (misal via Cloudflare Tunnel atau IP Server Anda)
+        - VITE_API_URL=https://api-toko.yourdomain.com
+    container_name: toko-sembako-frontend
+    ports:
+      - "8080:80"
+    restart: always
+    depends_on:
+      - backend
