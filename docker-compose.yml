@@ -44,7 +44,7 @@ services:
       args:
         # API URL diatur relatif (/api) agar frontend dan backend berkomunikasi
         # di domain yang sama lewat Caddy/Ngrok
-        - VITE_API_URL=/api
+        - VITE_API_URL=/
     container_name: toko-sembako-frontend
     ports:
       - "127.0.0.1:8080:80" # Hanya diakses via local / Caddy
