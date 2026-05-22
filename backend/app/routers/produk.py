@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from app.database import get_db
 from app.models.produk import Produk
@@ -8,12 +8,12 @@ from app.models.produk import Produk
 router = APIRouter(prefix="/api/produk", tags=["Produk"])
 
 class ProdukSchema(BaseModel):
-    nama: str
-    satuan: str = "pcs"
-    harga_beli: float
-    harga_jual: float
-    stok: int = 0
-    stok_minimum: int = 5
+    nama: str = Field(min_length=1, max_length=200)
+    satuan: str = Field(default="pcs", min_length=1, max_length=50)
+    harga_beli: float = Field(ge=0)
+    harga_jual: float = Field(ge=0)
+    stok: int = Field(default=0, ge=0)
+    stok_minimum: int = Field(default=5, ge=0)
     aktif: bool = True
 
 @router.get("/")

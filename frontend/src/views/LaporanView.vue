@@ -105,7 +105,7 @@
             </div>
             <div class="tx-info">
               <h4 class="tx-name">Penjualan #{{ tx.id }}</h4>
-              <p class="tx-time">{{ formatTanggal(tx.tanggal) }} · {{ tx.jumlah_item }} item</p>
+              <p class="tx-time">{{ formatTanggal(tx.tanggal, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) }} · {{ tx.jumlah_item }} item</p>
             </div>
             <span class="tx-amount tx-amount--sale">
               +{{ formatRupiah(tx.total) }}
@@ -122,6 +122,8 @@ import { ref, computed, onMounted, watch } from "vue";
 import { useLaporanStore } from "@/stores/laporan";
 
 type PeriodKey = "hari" | "minggu" | "bulan";
+
+import { formatRupiah, formatTanggal } from "@/utils/format";
 
 const activePeriod = ref<PeriodKey>("hari");
 const periods = [
@@ -141,21 +143,6 @@ const chartBars = computed(() => {
     value: g.value,
   }));
 });
-
-function formatRupiah(angka: number) {
-  return "Rp " + (angka || 0).toLocaleString("id-ID");
-}
-
-function formatTanggal(isoString: string) {
-  if (!isoString) return "";
-  const d = new Date(isoString);
-  return d.toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 watch(activePeriod, (newPeriod) => {
   laporanStore.fetchAll(newPeriod);

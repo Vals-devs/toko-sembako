@@ -175,9 +175,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
-import { useProdukStore } from "@/stores/produk";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
+import { useProdukStore, type Produk } from "@/stores/produk";
 import { useTransaksiStore } from "@/stores/transaksi";
+import { formatRupiah } from "@/utils/format";
 
 const produkStore = useProdukStore();
 const transaksiStore = useTransaksiStore();
@@ -219,11 +220,8 @@ const quickProducts = computed(() => produkStore.produkList.slice(0, 6));
 const totalItems = computed(() => cart.value.reduce((sum, item) => sum + item.qty, 0));
 const grandTotal = computed(() => cart.value.reduce((sum, item) => sum + item.harga_jual * item.qty, 0));
 
-function formatRupiah(angka: number) {
-  return "Rp " + angka.toLocaleString("id-ID");
-}
-
-function addToCart(produk: any) {
+function addToCart(produk: Produk) {
+  if (!produk.id) return;
   const existing = cart.value.find((item) => item.id === produk.id);
   if (existing) {
     existing.qty++;
@@ -301,14 +299,20 @@ watch(searchQuery, (val) => {
   if (val) showDropdown.value = true;
 });
 
+function handleClickOutside(e: MouseEvent) {
+  const target = e.target as HTMLElement;
+  if (!target.closest(".search-section")) {
+    showDropdown.value = false;
+  }
+}
+
 onMounted(() => {
   produkStore.fetchProduk();
-  document.addEventListener("click", (e) => {
-    const target = e.target as HTMLElement;
-    if (!target.closest(".search-section")) {
-      showDropdown.value = false;
-    }
-  });
+  document.addEventListener("click", handleClickOutside);
+});
+
+onUnmounted(() => {
+  document.removeEventListener("click", handleClickOutside);
 });
 </script>
 
@@ -541,7 +545,6 @@ onMounted(() => {
 
 /* Cart List */
 .cart-list {
-  divide: 1px solid var(--border-light);
 }
 
 .cart-item {
@@ -687,50 +690,7 @@ onMounted(() => {
 }
 
 /* Modal */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: var(--z-modal-backdrop);
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-}
-
-.modal-sheet {
-  width: 100%;
-  max-width: 480px;
-  background: var(--surface-card);
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  padding: 12px 24px 32px;
-  z-index: var(--z-modal);
-}
-
-.modal-handle {
-  width: 36px;
-  height: 4px;
-  background: var(--neutral-300);
-  border-radius: var(--radius-full);
-  margin: 0 auto 20px;
-}
-
-.modal-enter-active {
-  transition: opacity var(--duration-normal) ease;
-}
-
-.modal-enter-active .modal-sheet {
-  animation: slideUp var(--duration-slow) var(--ease-out) both;
-}
-
-.modal-leave-active {
-  transition: opacity var(--duration-fast) ease;
-}
-
-.modal-leave-to {
-  opacity: 0;
-}
-
+/* Specific Modal Content for Kasir */
 .pay-modal-content {
   display: flex;
   flex-direction: column;
@@ -779,116 +739,5 @@ onMounted(() => {
   font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
-}
-
-.modal-buttons {
-  display: flex;
-  gap: 10px;
-  width: 100%;
-  margin-top: 8px;
-}
-
-.btn-primary {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 14px 20px;
-  background: var(--primary-600);
-  color: white;
-  font-size: 15px;
-  font-weight: 600;
-  border-radius: var(--radius-md);
-  transition: all var(--duration-fast) ease;
-}
-
-.btn-primary:hover { background: var(--primary-700); }
-.btn-primary:active { transform: scale(0.97); }
-
-.btn-secondary {
-  flex: 1;
-  padding: 14px 20px;
-  background: var(--neutral-100);
-  color: var(--text-secondary);
-  font-size: 15px;
-  font-weight: 600;
-  border-radius: var(--radius-md);
-  transition: all var(--duration-fast) ease;
-}
-
-.btn-secondary:hover { background: var(--neutral-200); }
-
-/* Toast */
-.toast-success {
-  position: fixed;
-  bottom: calc(var(--bottom-nav-height) + 20px);
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: var(--z-toast);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 20px;
-  background: var(--primary-700);
-  color: white;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
-  font-size: 14px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.toast-error {
-  position: fixed;
-  bottom: calc(var(--bottom-nav-height) + 20px);
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: var(--z-toast);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 20px;
-  background: var(--danger-600);
-  color: white;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
-  font-size: 14px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.btn-loading-spinner {
-  width: 18px;
-  height: 18px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: white;
-  animation: spin 0.8s linear infinite;
-  display: inline-block;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.toast-enter-active {
-  animation: slideUp var(--duration-normal) var(--ease-spring) both;
-}
-
-.toast-leave-active {
-  animation: fadeIn var(--duration-fast) ease reverse both;
-}
-
-/* Responsive */
-@media (min-width: 640px) {
-  .modal-backdrop {
-    align-items: center;
-  }
-
-  .modal-sheet {
-    border-radius: var(--radius-xl);
-    margin: 20px;
-  }
 }
 </style>

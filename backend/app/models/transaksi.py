@@ -1,10 +1,7 @@
 from sqlalchemy import Column, Integer, Float, DateTime, ForeignKey, String
 from sqlalchemy.orm import relationship
 from app.database import Base
-from datetime import datetime, timedelta, timezone
-
-def get_wita_now():
-    return datetime.now(timezone(timedelta(hours=8))).replace(tzinfo=None)
+from app.utils import get_wita_now
 
 class Transaksi(Base):
     __tablename__ = "transaksi"
@@ -29,3 +26,4 @@ class DetailTransaksi(Base):
     subtotal = Column(Float, nullable=False)
 
     transaksi = relationship("Transaksi", back_populates="items")
+    produk = relationship("Produk")

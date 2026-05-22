@@ -249,7 +249,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
-import { useProdukStore } from "@/stores/produk";
+import { useProdukStore, type Produk } from "@/stores/produk";
+import { formatRupiah, formatRupiahShort } from "@/utils/format";
 
 const store = useProdukStore();
 
@@ -257,11 +258,11 @@ const showForm = ref(false);
 const editId = ref<number | null>(null);
 const searchQuery = ref("");
 const showDeleteConfirm = ref(false);
-const deletingProduk = ref<any>(null);
+const deletingProduk = ref<Produk | null>(null);
 
 const satuanOptions = ["pcs", "kg", "liter", "dus", "bungkus", "botol"];
 
-const form = ref({
+const form = ref<Produk>({
   nama: "",
   satuan: "pcs",
   harga_beli: 0,
@@ -287,19 +288,9 @@ const totalNilaiStok = computed(() =>
   store.produkList.reduce((sum, p) => sum + p.harga_jual * p.stok, 0)
 );
 
-function formatRupiah(angka: number) {
-  return "Rp " + angka.toLocaleString("id-ID");
-}
-
-function formatRupiahShort(angka: number) {
-  if (angka >= 1_000_000) return "Rp " + (angka / 1_000_000).toFixed(1) + "jt";
-  if (angka >= 1_000) return "Rp " + (angka / 1_000).toFixed(0) + "rb";
-  return "Rp " + angka;
-}
-
-function openForm(produk?: any) {
+function openForm(produk?: Produk) {
   if (produk) {
-    editId.value = produk.id;
+    editId.value = produk.id || null;
     form.value = { ...produk };
   } else {
     editId.value = null;
@@ -333,7 +324,7 @@ async function simpanProduk() {
   tutupForm();
 }
 
-function confirmHapus(produk: any) {
+function confirmHapus(produk: Produk) {
   deletingProduk.value = produk;
   showDeleteConfirm.value = true;
 }
@@ -687,41 +678,14 @@ onMounted(() => {
   line-height: 1.5;
 }
 
-/* ========================
-   Modal
-   ======================== */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: var(--z-modal-backdrop);
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-}
-
+/* Modal Overrides/Specifics */
 .modal-sheet {
-  width: 100%;
-  max-width: 480px;
   max-height: 90vh;
   overflow-y: auto;
-  background: var(--surface-card);
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  padding: 12px 24px 32px;
-  z-index: var(--z-modal);
 }
 
 .modal-sheet--small {
   padding-bottom: 24px;
-}
-
-.modal-handle {
-  width: 36px;
-  height: 4px;
-  background: var(--neutral-300);
-  border-radius: var(--radius-full);
-  margin: 0 auto 20px;
 }
 
 .modal-title {
@@ -729,92 +693,6 @@ onMounted(() => {
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 20px;
-}
-
-/* Modal transitions */
-.modal-enter-active {
-  transition: opacity var(--duration-normal) ease;
-}
-
-.modal-enter-active .modal-sheet {
-  animation: slideUp var(--duration-slow) var(--ease-out) both;
-}
-
-.modal-leave-active {
-  transition: opacity var(--duration-fast) ease;
-}
-
-.modal-leave-to {
-  opacity: 0;
-}
-
-/* ========================
-   Form Fields
-   ======================== */
-.form-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex: 1;
-}
-
-.field-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.field-input {
-  padding: 12px 14px;
-  background: var(--neutral-50);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-md);
-  font-size: 15px;
-  color: var(--text-primary);
-  outline: none;
-  transition: border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
-  width: 100%;
-}
-
-.field-input:focus {
-  border-color: var(--primary-400);
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
-  background: var(--surface-card);
-}
-
-.field-input::placeholder {
-  color: var(--neutral-400);
-}
-
-.field-input-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.field-prefix {
-  position: absolute;
-  left: 14px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-tertiary);
-  pointer-events: none;
-}
-
-.field-input--prefixed {
-  padding-left: 38px;
-}
-
-.field-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
 }
 
 /* Chip Select */
@@ -845,75 +723,7 @@ onMounted(() => {
   border-color: var(--primary-300);
 }
 
-/* ========================
-   Buttons
-   ======================== */
-.modal-buttons {
-  display: flex;
-  gap: 10px;
-  margin-top: 24px;
-}
-
-.btn-primary {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 14px 20px;
-  background: var(--primary-600);
-  color: white;
-  font-size: 15px;
-  font-weight: 600;
-  border-radius: var(--radius-md);
-  transition: all var(--duration-fast) ease;
-}
-
-.btn-primary:hover {
-  background: var(--primary-700);
-}
-
-.btn-primary:active {
-  transform: scale(0.97);
-}
-
-.btn-secondary {
-  flex: 1;
-  padding: 14px 20px;
-  background: var(--neutral-100);
-  color: var(--text-secondary);
-  font-size: 15px;
-  font-weight: 600;
-  border-radius: var(--radius-md);
-  transition: all var(--duration-fast) ease;
-}
-
-.btn-secondary:hover {
-  background: var(--neutral-200);
-}
-
-.btn-danger {
-  flex: 1;
-  padding: 14px 20px;
-  background: var(--danger-600);
-  color: white;
-  font-size: 15px;
-  font-weight: 600;
-  border-radius: var(--radius-md);
-  transition: all var(--duration-fast) ease;
-}
-
-.btn-danger:hover {
-  background: #b91c1c;
-}
-
-.btn-danger:active {
-  transform: scale(0.97);
-}
-
-/* ========================
-   Delete Confirm
-   ======================== */
+/* Delete Confirm */
 .delete-confirm-content {
   display: flex;
   flex-direction: column;
@@ -947,23 +757,12 @@ onMounted(() => {
   max-width: 300px;
 }
 
-/* ========================
-   Responsive
-   ======================== */
+/* Responsive Overrides */
 @media (min-width: 640px) {
   .card-list {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
-  }
-
-  .modal-backdrop {
-    align-items: center;
-  }
-
-  .modal-sheet {
-    border-radius: var(--radius-xl);
-    margin: 20px;
   }
 }
 </style>

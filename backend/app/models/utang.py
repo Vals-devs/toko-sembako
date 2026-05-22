@@ -1,9 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean
 from app.database import Base
-from datetime import datetime, timedelta, timezone
-
-def get_wita_now():
-    return datetime.now(timezone(timedelta(hours=8))).replace(tzinfo=None)
+from app.utils import get_wita_now
 
 class Utang(Base):
     __tablename__ = "utang"

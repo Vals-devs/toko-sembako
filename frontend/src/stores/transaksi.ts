@@ -35,9 +35,9 @@ export const useTransaksiStore = defineStore("transaksi", {
         const res = await api.post("/api/transaksi/", data);
         this.lastTransaksi = res.data;
         return res.data;
-      } catch (e: any) {
-        const msg =
-          e.response?.data?.detail || "Gagal mencatat transaksi";
+      } catch (e: unknown) {
+        const err = e as { response?: { data?: { detail?: string } } };
+        const msg = err.response?.data?.detail || "Gagal mencatat transaksi";
         this.error = msg;
         throw new Error(msg);
       } finally {

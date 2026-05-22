@@ -1,15 +1,13 @@
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
-from datetime import datetime, date, timedelta, timezone
+from datetime import datetime, date, timedelta
 from app.database import get_db
 from app.models.transaksi import Transaksi, DetailTransaksi
 from app.models.produk import Produk
+from app.utils import get_wita_today
 
 router = APIRouter(prefix="/api/laporan", tags=["Laporan"])
-
-def get_wita_today():
-    return datetime.now(timezone(timedelta(hours=8))).date()
 
 def _get_date_range(periode: str):
     """Return (start_date, end_date) for a given period."""
@@ -59,13 +57,14 @@ def laporan_ringkasan(
     transaksi_ids = [t.id for t in transaksi_list]
     pengeluaran = 0.0
     if transaksi_ids:
-        details = db.query(DetailTransaksi).filter(
+        details = db.query(DetailTransaksi).options(
+            joinedload(DetailTransaksi.produk)
+        ).filter(
             DetailTransaksi.transaksi_id.in_(transaksi_ids)
         ).all()
         for d in details:
-            produk = db.query(Produk).filter(Produk.id == d.produk_id).first()
-            if produk:
-                pengeluaran += produk.harga_beli * d.jumlah
+            if d.produk:
+                pengeluaran += d.produk.harga_beli * d.jumlah
 
     return {
         "periode": periode,
@@ -128,16 +127,15 @@ def laporan_grafik(
 
 @router.get("/transaksi-terakhir")
 def transaksi_terakhir(limit: int = 10, db: Session = Depends(get_db)):
-    transaksi_list = db.query(Transaksi).order_by(
+    transaksi_list = db.query(Transaksi).options(
+        joinedload(Transaksi.items)
+    ).order_by(
         Transaksi.tanggal.desc()
     ).limit(limit).all()
 
     result = []
     for t in transaksi_list:
-        details = db.query(DetailTransaksi).filter(
-            DetailTransaksi.transaksi_id == t.id
-        ).all()
-        item_count = sum(d.jumlah for d in details)
+        item_count = sum(d.jumlah for d in t.items)
         result.append({
             "id": t.id,
             "tanggal": t.tanggal,

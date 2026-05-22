@@ -116,6 +116,8 @@ import { useProdukStore } from "@/stores/produk";
 import { useUtangStore } from "@/stores/utang";
 import { useLaporanStore } from "@/stores/laporan";
 
+import { formatRupiah } from "@/utils/format";
+
 const produkStore = useProdukStore();
 const utangStore = useUtangStore();
 const laporanStore = useLaporanStore();
@@ -140,10 +142,6 @@ const todayFormatted = computed(() => {
     day: "numeric",
   });
 });
-
-function formatRupiah(angka: number) {
-  return "Rp " + (angka || 0).toLocaleString("id-ID");
-}
 
 onMounted(() => {
   produkStore.fetchProduk();

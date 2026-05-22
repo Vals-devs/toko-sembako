@@ -143,6 +143,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
 import { useUtangStore } from "@/stores/utang";
+import { formatRupiah, formatTanggal } from "@/utils/format";
 
 type FilterKey = "semua" | "belum" | "lunas";
 
@@ -162,20 +163,6 @@ const filters = [
   { key: "belum" as FilterKey, label: "Belum Lunas" },
   { key: "lunas" as FilterKey, label: "Lunas" },
 ];
-
-function formatRupiah(angka: number) {
-  return "Rp " + (angka || 0).toLocaleString("id-ID");
-}
-
-function formatTanggal(isoString: string) {
-  if (!isoString) return "";
-  const d = new Date(isoString);
-  return d.toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 const isPaying = ref<number | null>(null);
 
@@ -510,35 +497,10 @@ onMounted(() => {
   color: var(--text-secondary);
 }
 
-/* Modal */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: var(--z-modal-backdrop);
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-}
-
+/* Modal Overrides/Specifics */
 .modal-sheet {
-  width: 100%;
-  max-width: 480px;
   max-height: 90vh;
   overflow-y: auto;
-  background: var(--surface-card);
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  padding: 12px 24px 32px;
-  z-index: var(--z-modal);
-}
-
-.modal-handle {
-  width: 36px;
-  height: 4px;
-  background: var(--neutral-300);
-  border-radius: var(--radius-full);
-  margin: 0 auto 20px;
 }
 
 .modal-title {
@@ -547,119 +509,6 @@ onMounted(() => {
   color: var(--text-primary);
   margin-bottom: 20px;
 }
-
-.modal-enter-active {
-  transition: opacity var(--duration-normal) ease;
-}
-
-.modal-enter-active .modal-sheet {
-  animation: slideUp var(--duration-slow) var(--ease-out) both;
-}
-
-.modal-leave-active {
-  transition: opacity var(--duration-fast) ease;
-}
-
-.modal-leave-to {
-  opacity: 0;
-}
-
-/* Form */
-.form-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.field-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.field-input {
-  padding: 12px 14px;
-  background: var(--neutral-50);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-md);
-  font-size: 15px;
-  color: var(--text-primary);
-  outline: none;
-  transition: border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
-  width: 100%;
-}
-
-.field-input:focus {
-  border-color: var(--primary-400);
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
-  background: var(--surface-card);
-}
-
-.field-input::placeholder {
-  color: var(--neutral-400);
-}
-
-.field-input-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.field-prefix {
-  position: absolute;
-  left: 14px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-tertiary);
-  pointer-events: none;
-}
-
-.field-input--prefixed {
-  padding-left: 38px;
-}
-
-.modal-buttons {
-  display: flex;
-  gap: 10px;
-  margin-top: 24px;
-}
-
-.btn-primary {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 14px 20px;
-  background: var(--primary-600);
-  color: white;
-  font-size: 15px;
-  font-weight: 600;
-  border-radius: var(--radius-md);
-  transition: all var(--duration-fast) ease;
-}
-
-.btn-primary:hover { background: var(--primary-700); }
-.btn-primary:active { transform: scale(0.97); }
-
-.btn-secondary {
-  flex: 1;
-  padding: 14px 20px;
-  background: var(--neutral-100);
-  color: var(--text-secondary);
-  font-size: 15px;
-  font-weight: 600;
-  border-radius: var(--radius-md);
-  transition: all var(--duration-fast) ease;
-}
-
-.btn-secondary:hover { background: var(--neutral-200); }
 
 /* Info Banner */
 .info-banner {

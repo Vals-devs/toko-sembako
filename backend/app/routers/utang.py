@@ -1,17 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
 from app.database import get_db
 from app.models.utang import Utang
+from app.utils import get_wita_now
 
 router = APIRouter(prefix="/api/utang", tags=["Utang"])
 
 class UtangSchema(BaseModel):
-    nama_pelanggan: str
-    jumlah: float
-    keterangan: Optional[str] = None
+    nama_pelanggan: str = Field(min_length=1, max_length=200)
+    jumlah: float = Field(ge=0)
+    keterangan: Optional[str] = Field(default=None, max_length=500)
 
 class UtangResponse(BaseModel):
     id: int
@@ -57,17 +58,8 @@ def tandai_lunas(id: int, db: Session = Depends(get_db)):
     if not db_utang:
         raise HTTPException(status_code=404, detail="Data utang tidak ditemukan")
     
-    # Simpan salinan data untuk dikembalikan ke frontend agar tidak merusak state
-    response_data = {
-        "id": db_utang.id,
-        "nama_pelanggan": db_utang.nama_pelanggan,
-        "jumlah": db_utang.jumlah,
-        "keterangan": db_utang.keterangan,
-        "tanggal": db_utang.tanggal,
-        "lunas": True,
-        "tanggal_lunas": datetime.now()
-    }
-    
-    db.delete(db_utang)
+    db_utang.lunas = True
+    db_utang.tanggal_lunas = get_wita_now()
     db.commit()
-    return response_data
+    db.refresh(db_utang)
+    return db_utang

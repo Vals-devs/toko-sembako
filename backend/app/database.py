@@ -2,9 +2,7 @@ import os
 # pyrefly: ignore [missing-import]
 from sqlalchemy import create_engine
 # pyrefly: ignore [missing-import]
-from sqlalchemy.ext.declarative import declarative_base
-# pyrefly: ignore [missing-import]
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 # Ambil dari env variable (untuk production/Supabase) atau fallback ke SQLite lokal
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./toko.db")
@@ -24,7 +22,8 @@ engine = create_engine(
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
 
 def get_db():
     db = SessionLocal()
